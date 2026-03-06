@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rhineland Crisis, 1936 — Cabinet Simulation</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(12, 18, 31, 0.9);
+      --panel-2: rgba(21, 32, 56, 0.92);
+      --paper: #efe6d0;
+      --paper-ink: #2a2115;
+      --text: #e8edf5;
+      --muted: #9ba9bf;
+      --gold: #c8a44d;
+      --red: #b42318;
+      --green: #1f7a4d;
+      --blue: #275dad;
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 22px 60px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(4, 8, 15, 0.76), rgba(4, 8, 15, 0.92)),
+        radial-gradient(circle at 15% 15%, rgba(200,164,77,0.14), transparent 24%),
+        radial-gradient(circle at 85% 80%, rgba(39,93,173,0.12), transparent 22%),
+        url('https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1600&q=80') center/cover fixed;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(10,15,26,0.8), rgba(10,15,26,0.95));
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 22px;
+    }
+
+    .hero::after {
+      content: "MARCH 1936";
+      position: absolute;
+      right: 24px;
+      top: 14px;
+      color: rgba(200,164,77,0.12);
+      font-size: 56px;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+
+    h1, h2, h3, h4 { margin: 0 0 10px; }
+    h1 {
+      font-size: clamp(2rem, 3vw, 3.35rem);
+      line-height: 1.08;
+      color: #fff;
+      max-width: 850px;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      line-height: 1.68;
+      font-size: 1.04rem;
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      font-size: 0.9rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .panel-title { color: #fff; font-size: 1.08rem; }
+    .small { color: var(--muted); font-size: 0.88rem; }
+    .panel-body { padding: 18px; }
+
+    .briefing {
+      line-height: 1.72;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .briefing p { margin: 0 0 14px; }
+
+    .map-box {
+      background: linear-gradient(180deg, rgba(19,28,48,0.85), rgba(10,15,26,0.98));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+    }
+
+    svg { width: 100%; height: auto; display: block; }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      margin-right: 7px;
+      vertical-align: -1px;
+    }
+    .germany::before { background: rgba(180,35,24,0.82); }
+    .rhineland::before { background: rgba(200,164,77,0.82); }
+    .france::before { background: rgba(39,93,173,0.82); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .metric-label { color: var(--muted); font-size: 0.86rem; margin-bottom: 8px; }
+    .metric-value { color: #fff; font-size: 1.7rem; font-weight: bold; }
+    .metric-note { color: var(--muted); font-size: 0.84rem; margin-top: 4px; }
+
+    .phase-box {
+      border: 1px solid rgba(200,164,77,0.28);
+      background: linear-gradient(180deg, rgba(200,164,77,0.08), rgba(255,255,255,0.02));
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+    }
+
+    .decision {
+      background: linear-gradient(180deg, rgba(22,33,56,0.94), rgba(10,15,26,0.98));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px;
+      transition: transform 0.18s ease, border-color 0.18s ease;
+    }
+    .decision:hover { transform: translateY(-2px); border-color: rgba(200,164,77,0.45); }
+
+    .decision p {
+      color: #dce4f0;
+      margin: 0 0 12px;
+      line-height: 1.62;
+      font-size: 0.96rem;
+    }
+
+    .effects {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .effect {
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+    }
+    .good { color: #b8f0cf; }
+    .bad { color: #fecaca; }
+    .neutral { color: #cbd5e1; }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: #fff;
+      background: linear-gradient(135deg, #a16807, #c8a44d);
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(200,164,77,0.2);
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.03); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .secondary { background: linear-gradient(135deg, #334155, #475569); box-shadow: none; }
+
+    .stack { display: grid; gap: 16px; }
+
+    .paper {
+      background: linear-gradient(180deg, #f4ecd9, #eadfca);
+      color: var(--paper-ink);
+      border-radius: 20px;
+      border: 1px solid rgba(84,62,32,0.22);
+      padding: 18px 18px 16px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 18px 36px rgba(0,0,0,0.22);
+      position: relative;
+    }
+
+    .paper::before {
+      content: "Confidential";
+      position: absolute;
+      right: 18px;
+      top: 14px;
+      border: 2px solid rgba(180,35,24,0.45);
+      color: rgba(180,35,24,0.75);
+      padding: 3px 8px;
+      font-size: 0.74rem;
+      letter-spacing: 0.06em;
+      transform: rotate(-8deg);
+      text-transform: uppercase;
+    }
+
+    .paper h4 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .paper .meta {
+      color: #5c503f;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+
+    .paper p {
+      margin: 0;
+      line-height: 1.65;
+      font-size: 0.97rem;
+    }
+
+    .newspaper {
+      background: linear-gradient(180deg, #f3efe4, #e6dece);
+      color: #231b10;
+      border-radius: 20px;
+      border: 1px solid rgba(84,62,32,0.24);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 18px 36px rgba(0,0,0,0.22);
+      padding: 18px;
+    }
+
+    .paper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      border-bottom: 2px solid rgba(35,27,16,0.2);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .masthead {
+      font-size: 1.45rem;
+      letter-spacing: 0.08em;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .headline {
+      font-size: 1.18rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .newspaper p {
+      margin: 0;
+      line-height: 1.62;
+      font-size: 0.95rem;
+    }
+
+    .log {
+      display: grid;
+      gap: 12px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .entry {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .entry-title {
+      font-size: 0.93rem;
+      color: var(--gold);
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .entry p {
+      margin: 0;
+      color: #e2e8f0;
+      line-height: 1.6;
+      font-size: 0.94rem;
+    }
+
+    @media (max-width: 1060px) {
+      .layout { grid-template-columns: 1fr; }
+      .hero::after { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>The Rhineland Crisis, 1936 — Cabinet Simulation</h1>
+      <p class="subtitle">
+        You are entering the French cabinet room in March 1936. German troops have crossed into the demilitarized Rhineland in open violation of Versailles and Locarno. Your first decision will shape the next diplomatic moments. This extended simulation is designed to help students think through deterrence, appeasement, balance of power, and the gradual collapse of the interwar order.
+      </p>
+      <div class="badges">
+        <div class="badge">Concept: Deterrence</div>
+        <div class="badge">Concept: Revisionism</div>
+        <div class="badge">Concept: Collective Security</div>
+        <div class="badge">IR Lens: Realism vs Liberal Institutionalism</div>
+        <div class="badge">Teaching Use: Political History / IR</div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <div class="column">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Strategic Briefing</div>
+            <button id="resetBtn" class="secondary">Reset Simulation</button>
+          </div>
+          <div class="panel-body">
+            <div class="briefing">
+              <p><strong>Historical situation:</strong> On 7 March 1936, Hitler remilitarized the Rhineland. The move was dangerous: German troops had orders to withdraw if they encountered serious French military resistance. Yet France faced domestic political division, uncertainty about British support, and a deep fear of triggering another major war.</p>
+              <p><strong>Teaching question:</strong> Should states defend treaty law immediately, even at the risk of escalation, or avoid war and preserve short-term peace? Your decision will trigger new events, fresh diplomatic papers, and newspaper reactions.</p>
+            </div>
+
+            <div class="map-box">
+              <svg viewBox="0 0 800 360" aria-label="Strategic map of the Rhineland crisis">
+                <rect x="0" y="0" width="800" height="360" rx="18" fill="rgba(10,15,26,0.58)" />
+                <rect x="65" y="72" width="278" height="206" rx="18" fill="rgba(180,35,24,0.78)" stroke="rgba(255,255,255,0.14)" />
+                <text x="204" y="178" text-anchor="middle" fill="#fff" font-size="34" font-weight="bold">GERMANY</text>
+
+                <rect x="325" y="74" width="90" height="202" rx="12" fill="rgba(200,164,77,0.88)" stroke="rgba(255,255,255,0.2)" />
+                <text x="370" y="118" text-anchor="middle" fill="#111827" font-size="22" font-weight="bold">RHINELAND</text>
+                <text x="370" y="154" text-anchor="middle" fill="#111827" font-size="16">Demilitarized</text>
+                <text x="370" y="176" text-anchor="middle" fill="#111827" font-size="16">zone until</text>
+                <text x="370" y="198" text-anchor="middle" fill="#111827" font-size="16">March 1936</text>
+
+                <rect x="445" y="72" width="262" height="206" rx="18" fill="rgba(39,93,173,0.78)" stroke="rgba(255,255,255,0.14)" />
+                <text x="576" y="178" text-anchor="middle" fill="#fff" font-size="34" font-weight="bold">FRANCE</text>
+                <line x1="415" y1="72" x2="415" y2="278" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-dasharray="8 8"/>
+                <polygon points="336,182 353,170 353,194" fill="#111827" />
+                <text x="252" y="320" fill="#cbd5e1" font-size="15">German entry into the Rhineland</text>
+              </svg>
+              <div class="legend">
+                <span class="germany">Germany</span>
+                <span class="rhineland">Rhineland</span>
+                <span class="france">France</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Cabinet Decision Room</div>
+            <div class="small" id="phaseLabel">Phase I — Initial French response</div>
+          </div>
+          <div class="panel-body">
+            <div class="phase-box" id="phaseDescription">
+              <strong>Situation:</strong> France must decide how to respond to Hitler’s move. The choice will determine the next diplomatic event and the wider European atmosphere.
+            </div>
+            <div class="cards" id="decisionCards"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="column">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Situation Dashboard</div>
+            <div class="small">Updated after each turn</div>
+          </div>
+          <div class="panel-body">
+            <div class="metrics">
+              <div class="metric">
+                <div class="metric-label">French Security</div>
+                <div class="metric-value" id="securityValue">50</div>
+                <div class="metric-note">Strategic safety and freedom of action</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Deterrence Credibility</div>
+                <div class="metric-value" id="deterrenceValue">50</div>
+                <div class="metric-note">Will treaty violations be resisted?</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">British Support</div>
+                <div class="metric-value" id="britainValue">50</div>
+                <div class="metric-note">Likelihood of diplomatic or military backing</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Hitler’s Confidence</div>
+                <div class="metric-value" id="hitlerValue">50</div>
+                <div class="metric-note">Encouragement for future revisionism</div>
+              </div>
+            </div>
+
+            <div class="stack">
+              <div class="paper" id="paperBox">
+                <h4>Cabinet Memorandum</h4>
+                <div class="meta">Paris · Ministry of Foreign Affairs · 8 March 1936</div>
+                <p>The general staff warns that a decisive French move might force Germany to retreat, but ministers remain uncertain whether Britain would support immediate action. Public opinion fears another war, while military advisers insist that delay may encourage further treaty violations.</p>
+              </div>
+
+              <div class="newspaper" id="newsBox">
+                <div class="paper-header">
+                  <div class="masthead">The Continental Herald</div>
+                  <div class="small" style="color:#5c503f;">Special European Edition</div>
+                </div>
+                <div class="headline">Berlin Tests the Postwar Order in the Rhineland</div>
+                <p>European capitals confront a grave dilemma: should treaty law be enforced immediately, or should diplomacy be given one more chance? Observers note that the decision taken now may determine whether future aggressors expect resistance or retreat.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Diplomatic Log</div>
+            <div class="small">Chronology of choices and consequences</div>
+          </div>
+          <div class="panel-body">
+            <div class="log" id="logArea">
+              <div class="entry">
+                <div class="entry-title">Initial Brief</div>
+                <p>French leaders know that Germany is still weaker than it will be later, but fear acting alone, misjudging British support, and provoking a wider war before domestic opinion is prepared.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const initialState = {
+      security: 50,
+      deterrence: 50,
+      britain: 50,
+      hitler: 50,
+      phase: 1,
+      chosenFirst: null,
+      finished: false
+    };
+
+    let state = { ...initialState };
+
+    const phaseData = {
+      1: {
+        label: 'Phase I — Initial French response',
+        description: 'France must decide whether to resist Germany immediately, rely on international diplomacy, or protest without action. This choice determines the next European political climate.',
+        decisions: [
+          {
+            id: 'military',
+            title: 'Order Immediate Military Mobilization',
+            description: 'France sends troops toward the frontier and makes clear that treaty violations will be met by force. This is the strongest deterrent option.',
+            effects: [
+              { label: 'Deterrence rises sharply', type: 'good' },
+              { label: 'Risk of escalation rises', type: 'bad' },
+              { label: 'British discomfort likely', type: 'neutral' }
+            ],
+            delta: { security: 18, deterrence: 28, britain: -8, hitler: -22 },
+            paper: {
+              title: 'Urgent Military Note',
+              meta: 'Paris · General Staff · 9 March 1936',
+              text: 'Field reports suggest that German units in the Rhineland remain lightly committed. A rapid French advance could compel withdrawal before Berlin is prepared for sustained confrontation. Delay is likely to normalize the occupation and reduce the political effect of any future French protest.'
+            },
+            news: {
+              headline: 'Paris Orders Mobilization Along the Frontier',
+              text: 'European markets tremble as France signals readiness to enforce the treaty settlement. Diplomats in London warn that decisive French action may restore credibility to collective security, though critics fear an uncontrollable spiral toward war.'
+            },
+            logTitle: 'French Decision: Military Pressure',
+            logText: 'France chooses deterrence backed by force. The cabinet accepts short-term danger in exchange for restoring treaty credibility.'
+          },
+          {
+            id: 'league',
+            title: 'Appeal to the League and Pursue Diplomacy',
+            description: 'France avoids unilateral war and seeks coordinated condemnation through the League of Nations and British diplomacy.',
+            effects: [
+              { label: 'Legitimacy preserved', type: 'good' },
+              { label: 'Deterrence remains uncertain', type: 'neutral' },
+              { label: 'Germany gains time', type: 'bad' }
+            ],
+            delta: { security: 4, deterrence: 6, britain: 10, hitler: 10 },
+            paper: {
+              title: 'Foreign Office Assessment',
+              meta: 'Paris · Quai d’Orsay · 9 March 1936',
+              text: 'A diplomatic appeal may secure broader British sympathy and preserve French legality in the eyes of the League. Yet institutional procedures are slow, and every day that passes permits Germany to entrench politically and psychologically in the Rhineland.'
+            },
+            news: {
+              headline: 'France Seeks League Action Over Rhineland Shock',
+              text: 'Geneva becomes the arena of a new European test. Observers note that diplomatic legitimacy has been preserved, but critics ask whether law without force can still restrain revisionist states.'
+            },
+            logTitle: 'French Decision: League Strategy',
+            logText: 'France prefers institutional legitimacy and collective diplomacy, hoping Britain will support a common front without immediate war.'
+          },
+          {
+            id: 'protest',
+            title: 'Issue Strong Protest but Avoid Action',
+            description: 'France condemns Germany publicly but avoids military mobilization and relies on diplomatic protest alone.',
+            effects: [
+              { label: 'Immediate calm preserved', type: 'neutral' },
+              { label: 'Deterrence weakens', type: 'bad' },
+              { label: 'Hitler emboldened', type: 'bad' }
+            ],
+            delta: { security: -10, deterrence: -18, britain: 4, hitler: 24 },
+            paper: {
+              title: 'Cabinet Caution Memorandum',
+              meta: 'Paris · Prime Minister’s Office · 9 March 1936',
+              text: 'Public opinion remains deeply fearful of another continental war. Without firm British support, ministers judge military action too risky. Yet advisers warn that a protest unsupported by power may invite further challenges to the postwar order.'
+            },
+            news: {
+              headline: 'Europe Condemns Berlin — But No Troops Move',
+              text: 'Diplomatic protests continue, though military silence is already being read in some capitals as a sign of declining will. Commentators ask whether this marks not a resolution of crisis, but the beginning of a more dangerous one.'
+            },
+            logTitle: 'French Decision: Protest Without Action',
+            logText: 'France chooses caution. The government avoids immediate war but risks weakening long-term deterrence.'
+          }
+        ]
+      },
+      2: {
+        label: 'Phase II — Britain responds',
+        description: 'Your first move has shaped British attitudes. London now reacts to the crisis. Will Britain align firmly with France, encourage compromise, or distance itself from enforcement?',
+        getDecisions: (firstChoice) => {
+          if (firstChoice === 'military') {
+            return [
+              {
+                id: 'brit_back',
+                title: 'Seek Immediate British Backing',
+                description: 'France presses London to support coercive enforcement and present a united anti-revisionist front.',
+                effects: [
+                  { label: 'Alliance credibility rises', type: 'good' },
+                  { label: 'British hesitation persists', type: 'neutral' }
+                ],
+                delta: { security: 10, deterrence: 12, britain: 8, hitler: -10 },
+                paper: {
+                  title: 'Telegram from London',
+                  meta: 'British Embassy · 10 March 1936',
+                  text: 'British ministers remain anxious about war, yet a firm and disciplined French posture has altered the mood. Some now argue that if Germany is not checked at this stage, later confrontations may prove costlier and more dangerous.'
+                },
+                news: {
+                  headline: 'London Debates Support for French Stand',
+                  text: 'The British cabinet is divided between fear of escalation and concern for the credibility of treaties. A united Anglo-French position, some argue, may yet compel Berlin to retreat.'
+                },
+                logTitle: 'British Reaction: Conditional Support',
+                logText: 'French firmness begins to shift British calculations. The possibility of a coordinated front emerges.'
+              },
+              {
+                id: 'brit_pause',
+                title: 'Pause and Negotiate from Strength',
+                description: 'France maintains mobilization but opens talks, hoping German retreat can be obtained without war.',
+                effects: [
+                  { label: 'Escalation risk reduced', type: 'good' },
+                  { label: 'Pressure on Berlin maintained', type: 'good' }
+                ],
+                delta: { security: 8, deterrence: 8, britain: 12, hitler: -6 },
+                paper: {
+                  title: 'Diplomatic Note on Controlled Escalation',
+                  meta: 'Paris · Foreign Ministry · 10 March 1936',
+                  text: 'A measured combination of readiness and negotiation may preserve French resolve while reassuring Britain. The cabinet must decide whether military firmness can be translated into diplomatic advantage before events outrun control.'
+                },
+                news: {
+                  headline: 'France Holds Line While Diplomats Seek Formula',
+                  text: 'European observers note that Paris now bargains from a position of strength. Berlin faces a narrowing window in which retreat may still be framed as prudence rather than defeat.'
+                },
+                logTitle: 'British Reaction: Support for Negotiated Pressure',
+                logText: 'A mixed strategy of firmness and negotiation becomes possible, preserving deterrence while reducing immediate war risk.'
+              }
+            ];
+          }
+
+          if (firstChoice === 'league') {
+            return [
+              {
+                id: 'brit_geneva',
+                title: 'Rely on Geneva and British Mediation',
+                description: 'France doubles down on collective security and allows Britain to shape the diplomatic pace.',
+                effects: [
+                  { label: 'Legality strengthened', type: 'good' },
+                  { label: 'Germany gains time', type: 'bad' }
+                ],
+                delta: { security: 2, deterrence: 2, britain: 8, hitler: 8 },
+                paper: {
+                  title: 'League Procedure Memorandum',
+                  meta: 'Geneva · Secretariat Note · 11 March 1936',
+                  text: 'The formal machinery of collective security has been activated. Yet procedural delay remains substantial, and no mechanism exists to compel major powers to undertake immediate enforcement. Germany may conclude that censure without coercion is a tolerable cost.'
+                },
+                news: {
+                  headline: 'Geneva Debates; Berlin Waits',
+                  text: 'As diplomats gather, Germany consolidates its position in the Rhineland. Newspapers across Europe increasingly ask whether collective security can act faster than revisionist opportunism.'
+                },
+                logTitle: 'British Reaction: Mediation over Enforcement',
+                logText: 'Britain supports process, not coercion. The crisis remains legal in form but strategic in substance.'
+              },
+              {
+                id: 'brit_warn',
+                title: 'Pair Diplomacy with a Joint Warning',
+                description: 'France persuades Britain to issue a stronger warning, though neither side mobilizes for war.',
+                effects: [
+                  { label: 'Some deterrent value restored', type: 'good' },
+                  { label: 'Still no hard enforcement', type: 'neutral' }
+                ],
+                delta: { security: 6, deterrence: 8, britain: 12, hitler: 2 },
+                paper: {
+                  title: 'Joint Diplomatic Draft',
+                  meta: 'Paris–London Consultation · 11 March 1936',
+                  text: 'A coordinated warning may recover some credibility without immediate recourse to force. However, if Germany remains unmoved, the next question will become unavoidable: are Britain and France willing to convert words into action?' 
+                },
+                news: {
+                  headline: 'Paris and London Issue Stern Warning to Berlin',
+                  text: 'The tone of Anglo-French diplomacy hardens, but skepticism remains widespread. Markets and ministries alike wonder whether this is the beginning of a real front — or merely a louder protest.'
+                },
+                logTitle: 'British Reaction: Stronger Diplomatic Signal',
+                logText: 'Anglo-French coordination improves, but the credibility of deterrence still depends on whether force stands behind words.'
+              }
+            ];
+          }
+
+          return [
+            {
+              id: 'brit_detach',
+              title: 'Accept British Restraint and Move On',
+              description: 'France keeps the crisis at the level of protest and accepts that Britain prefers not to escalate.',
+              effects: [
+                { label: 'Short-term calm preserved', type: 'neutral' },
+                { label: 'Hitler’s confidence rises further', type: 'bad' }
+              ],
+              delta: { security: -6, deterrence: -10, britain: 8, hitler: 14 },
+              paper: {
+                title: 'Minute on British Attitude',
+                meta: 'French Embassy, London · 11 March 1936',
+                text: 'British policymakers regard the German move as serious but not worth war. Many argue that German troops have merely entered what some describe as their own strategic backyard. The implication is sobering: France cannot assume active support for treaty enforcement in eastern or central Europe.'
+              },
+              news: {
+                headline: 'London Urges Calm as Berlin Consolidates Position',
+                text: 'The diplomatic atmosphere favors restraint. Yet critics warn that each unchallenged revision makes the next one easier, and the next crisis more dangerous.'
+              },
+              logTitle: 'British Reaction: Restraint Prevails',
+              logText: 'Britain’s caution reinforces the sense that no great power will enforce treaty restrictions at high risk.'
+            },
+            {
+              id: 'brit_lastwarn',
+              title: 'Use Protest to Demand a Final Conference',
+              description: 'France seeks one last European conference, hoping to freeze the situation before German gains become permanent.',
+              effects: [
+                { label: 'Diplomatic space reopened', type: 'neutral' },
+                { label: 'Germany treated as agenda-setter', type: 'bad' }
+              ],
+              delta: { security: -2, deterrence: -4, britain: 10, hitler: 10 },
+              paper: {
+                title: 'Conference Proposal Draft',
+                meta: 'Paris · 11 March 1936',
+                text: 'A general conference might delay deeper crisis and demonstrate diplomatic seriousness. Yet convening talks after a treaty violation risks teaching Berlin that successful faits accomplis are the quickest road to negotiation on revised terms.'
+              },
+              news: {
+                headline: 'European Conference Proposed After Rhineland Shock',
+                text: 'Supporters call the proposal prudent diplomacy; critics call it surrender by procedure. The wider lesson may be that revision first, negotiation later, is becoming Europe’s new political rhythm.'
+              },
+              logTitle: 'British Reaction: Conference Path',
+              logText: 'Diplomacy survives, but at the price of normalizing Germany’s initiative.'
+            }
+          ];
+        }
+      },
+      3: {
+        label: 'Phase III — Long-term European consequences',
+        description: 'Your combined choices now shape the strategic lesson drawn in Berlin and across Europe. Consider not only immediate peace, but the message sent to future revisionist moves.',
+        getDecisions: (firstChoice, secondChoice) => {
+          if (firstChoice === 'military') {
+            return [
+              {
+                id: 'end_deterrence',
+                title: 'Hold Firm and Preserve a Deterrent Europe',
+                description: 'France and its partners insist that treaty revision must occur only through negotiation, not unilateral force.',
+                effects: [
+                  { label: 'Treaty credibility preserved', type: 'good' },
+                  { label: 'Revisionism discouraged', type: 'good' }
+                ],
+                delta: { security: 12, deterrence: 16, britain: 4, hitler: -14 },
+                paper: {
+                  title: 'Strategic Summary for the Cabinet',
+                  meta: 'Paris · End-of-Crisis Review',
+                  text: 'A posture of firmness has restored the belief that major treaty breaches may carry real costs. Even if war is avoided, the central lesson transmitted to Berlin is that the postwar order cannot be revised by unilateral military probes alone.'
+                },
+                news: {
+                  headline: 'Europe Relearns the Logic of Deterrence',
+                  text: 'The Rhineland crisis ends with a stronger warning to all revisionist powers: diplomatic revision remains possible, but only within an order whose defenders are visibly willing to act.'
+                },
+                logTitle: 'Outcome: Deterrence Restored',
+                logText: 'A stronger French response may not solve every structural problem, but it raises the cost of future aggression and alters the psychology of the 1930s.'
+              }
+            ];
+          }
+
+          if (firstChoice === 'league') {
+            return [
+              {
+                id: 'end_fragile',
+                title: 'Preserve Peace, but Accept a More Fragile Order',
+                description: 'France and Britain avoid war, but the system emerges weaker and more dependent on Hitler’s future restraint.',
+                effects: [
+                  { label: 'Immediate peace preserved', type: 'neutral' },
+                  { label: 'Future crises more likely', type: 'bad' }
+                ],
+                delta: { security: -4, deterrence: -8, britain: 6, hitler: 12 },
+                paper: {
+                  title: 'Confidential Reflection on European Order',
+                  meta: 'Paris · Strategic Review',
+                  text: 'The government has succeeded in avoiding immediate war and preserving diplomatic unity. Yet the price may prove considerable: if Berlin interprets caution as weakness, the Rhineland may become less an isolated dispute than the opening lesson in a wider sequence of revisionist advances.'
+                },
+                news: {
+                  headline: 'Peace Preserved — But Confidence in Geneva Fades',
+                  text: 'Europe breathes more easily, yet doubts deepen about whether institutions can contain aggressive powers. The order survives formally, but its authority has thinned.'
+                },
+                logTitle: 'Outcome: Conditional Stability',
+                logText: 'Short-term peace is preserved, but the strategic system becomes more fragile and more dependent on the self-restraint of revisionist states.'
+              }
+            ];
+          }
+
+          return [
+            {
+              id: 'end_appease',
+              title: 'Normalize Retreat and Encourage Further Revision',
+              description: 'The crisis passes without war, but Berlin draws the lesson that determined treaty violations will meet protest rather than resistance.',
+              effects: [
+                { label: 'Immediate calm maintained', type: 'neutral' },
+                { label: 'Hitler emboldened for Austria and beyond', type: 'bad' }
+              ],
+              delta: { security: -8, deterrence: -14, britain: 4, hitler: 18 },
+              paper: {
+                title: 'Long-Range Assessment of Strategic Consequences',
+                meta: 'French Military Analysis · Retrospective Note',
+                text: 'By allowing the Rhineland violation to stand uncontested, Europe teaches Berlin that audacity may yield reward without war. The immediate crisis ends, but deterrence erodes, and the next revisionist move may come under even less favorable conditions for France and its allies.'
+              },
+              news: {
+                headline: 'A Quiet March in the Rhineland, A Louder Future Ahead',
+                text: 'What passes today as prudence may be remembered tomorrow as surrender by stages. If the lesson of 1936 is that treaties do not defend themselves, Europe may soon confront a far greater crisis.'
+              },
+              logTitle: 'Outcome: Appeasement Logic Deepens',
+              logText: 'The crisis ends without war, but the psychological and strategic gains flow overwhelmingly to Hitler.'
+            }
+          ];
+        }
+      }
+    };
+
+    const ids = {
+      security: document.getElementById('securityValue'),
+      deterrence: document.getElementById('deterrenceValue'),
+      britain: document.getElementById('britainValue'),
+      hitler: document.getElementById('hitlerValue')
+    };
+
+    const decisionCards = document.getElementById('decisionCards');
+    const logArea = document.getElementById('logArea');
+    const phaseLabel = document.getElementById('phaseLabel');
+    const phaseDescription = document.getElementById('phaseDescription');
+    const paperBox = document.getElementById('paperBox');
+    const newsBox = document.getElementById('newsBox');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function clamp(n) { return Math.max(0, Math.min(100, n)); }
+
+    function updateMetrics() {
+      ids.security.textContent = state.security;
+      ids.deterrence.textContent = state.deterrence;
+      ids.britain.textContent = state.britain;
+      ids.hitler.textContent = state.hitler;
+    }
+
+    function setPaper(paper) {
+      paperBox.innerHTML = `
+        <h4>${paper.title}</h4>
+        <div class="meta">${paper.meta}</div>
+        <p>${paper.text}</p>
+      `;
+    }
+
+    function setNews(news) {
+      newsBox.innerHTML = `
+        <div class="paper-header">
+          <div class="masthead">The Continental Herald</div>
+          <div class="small" style="color:#5c503f;">Special European Edition</div>
+        </div>
+        <div class="headline">${news.headline}</div>
+        <p>${news.text}</p>
+      `;
+    }
+
+    function addLog(title, text) {
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      entry.innerHTML = `<div class="entry-title">${title}</div><p>${text}</p>`;
+      logArea.prepend(entry);
+    }
+
+    function currentDecisions() {
+      if (state.phase === 1) return phaseData[1].decisions;
+      if (state.phase === 2) return phaseData[2].getDecisions(state.chosenFirst);
+      return phaseData[3].getDecisions(state.chosenFirst, state.chosenSecond);
+    }
+
+    function renderPhase() {
+      const data = phaseData[state.phase];
+      phaseLabel.textContent = data.label;
+      phaseDescription.innerHTML = `<strong>Situation:</strong> ${data.description}`;
+      decisionCards.innerHTML = '';
+
+      currentDecisions().forEach(decision => {
+        const card = document.createElement('div');
+        card.className = 'decision';
+        card.innerHTML = `
+          <h3>${decision.title}</h3>
+          <p>${decision.description}</p>
+          <div class="effects">
+            ${decision.effects.map(e => `<span class="effect ${e.type}">${e.label}</span>`).join('')}
+          </div>
+          <button data-id="${decision.id}" ${state.finished ? 'disabled' : ''}>Choose This Policy</button>
+        `;
+        decisionCards.appendChild(card);
+      });
+
+      decisionCards.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => applyDecision(btn.dataset.id));
+      });
+    }
+
+    function applyDecision(id) {
+      if (state.finished) return;
+      const decision = currentDecisions().find(d => d.id === id);
+      if (!decision) return;
+
+      state.security = clamp(state.security + decision.delta.security);
+      state.deterrence = clamp(state.deterrence + decision.delta.deterrence);
+      state.britain = clamp(state.britain + decision.delta.britain);
+      state.hitler = clamp(state.hitler + decision.delta.hitler);
+
+      setPaper(decision.paper);
+      setNews(decision.news);
+      addLog(decision.logTitle, decision.logText);
+      updateMetrics();
+
+      if (state.phase === 1) {
+        state.chosenFirst = id;
+        state.phase = 2;
+        renderPhase();
+        return;
+      }
+
+      if (state.phase === 2) {
+        state.chosenSecond = id;
+        state.phase = 3;
+        renderPhase();
+        return;
+      }
+
+      state.finished = true;
+      renderPhase();
+      addLog(
+        'Historical Reflection',
+        'Historically, France and Britain protested but took no military action after the remilitarization of the Rhineland. Many historians argue that this strengthened Hitler’s confidence and contributed to the subsequent chain of revisionist successes in Austria and Czechoslovakia.'
+      );
+      phaseLabel.textContent = 'Simulation Complete';
+      phaseDescription.innerHTML = '<strong>Teaching conclusion:</strong> Compare your path with the historical outcome. Did your strategy maximize deterrence, preserve peace, or merely postpone a larger crisis?';
+    }
+
+    function resetSimulation() {
+      state = { ...initialState };
+      updateMetrics();
+      renderPhase();
+      logArea.innerHTML = `
+        <div class="entry">
+          <div class="entry-title">Initial Brief</div>
+          <p>French leaders know that Germany is still weaker than it will be later, but fear acting alone, misjudging British support, and provoking a wider war before domestic opinion is prepared.</p>
+        </div>
+      `;
+      setPaper({
+        title: 'Cabinet Memorandum',
+        meta: 'Paris · Ministry of Foreign Affairs · 8 March 1936',
+        text: 'The general staff warns that a decisive French move might force Germany to retreat, but ministers remain uncertain whether Britain would support immediate action. Public opinion fears another war, while military advisers insist that delay may encourage further treaty violations.'
+      });
+      setNews({
+        headline: 'Berlin Tests the Postwar Order in the Rhineland',
+        text: 'European capitals confront a grave dilemma: should treaty law be enforced immediately, or should diplomacy be given one more chance? Observers note that the decision taken now may determine whether future aggressors expect resistance or retreat.'
+      });
+    }
+
+    resetBtn.addEventListener('click', resetSimulation);
+    updateMetrics();
+    renderPhase();
+  </script>
+</body>
+</html>
